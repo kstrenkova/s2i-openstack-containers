@@ -843,6 +843,27 @@ names (`opendev.org/openstack/tempest`). The staging playbook maps both
 forms so speculative checkouts are copied into `src/` instead of
 building from the pinned git hash.
 
+#### Pinned checkouts (`s2i_ci_prefer_shas`)
+
+Zuul checks required projects out at branch tip. That is what a
+speculative build wants, but a job that rebuilds this repository's own
+content must honour the hashes in `sources.txt` instead.
+
+With `s2i_ci_prefer_shas: true` the staging playbook resets each staged
+tree to its `sources.txt` hash after the rsync. Projects carrying a
+change in the buildset — the change under test and anything pulled in
+by `Depends-On` — are exempt, so speculative content survives. If the
+pinned commit is missing from the Zuul checkout, the staged tree is
+discarded and `build.sh` clones the pin.
+
+The variable defaults to `false`, so jobs that build to validate an
+upstream change keep the tip checkout. Only this repository turns it
+on, in its own `github-check` entry in `zuul.d/projects.yaml`,
+alongside the `required-projects` entries for the opendev service
+repositories. Both sit there rather than on the job itself because
+`required-projects` is inherited: on the job they would also stage
+into operator child jobs, which must keep cloning the pins.
+
 Staging alone is not enough: committed `requirements.lock.<stream>` still
 pins the last `update-sources` run. After any sources are staged, the
 content provider runs `tox -e sync-locks` for those projects. That
@@ -870,8 +891,8 @@ dependencies of an image target:
 
 ```bash
 PARALLEL=1 ./build.sh list-sources tempest/tempest master
-# Output: name|canonical_project|url|dest_dir
-# tempest|openstack/tempest|https://opendev.org/openstack/tempest.git|/.../containers/tempest/src/tempest
+# Output: name|canonical_project|url|dest_dir|pinned_hash
+# tempest|openstack/tempest|https://opendev.org/openstack/tempest.git|/.../containers/tempest/src/tempest|5f2c...
 # barbican-tempest-plugin|openstack/barbican-tempest-plugin|https://...
 ```
 

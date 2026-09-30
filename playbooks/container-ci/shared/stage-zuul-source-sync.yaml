@@ -1,7 +1,8 @@
 ---
 # Sync a single Zuul source checkout into its container build context.
 #
-# s2i_ci_src is a list: [name, canonical_project, url, dest_dir]
+# s2i_ci_src is a list:
+#   [name, canonical_project, url, dest_dir, pinned_hash]
 # from `build.sh list-sources` output.
 
 - name: "Resolve Zuul checkout path for {{ s2i_ci_src[0] }}"
@@ -41,6 +42,40 @@
     - name: "Log staged source for {{ s2i_ci_src[0] }}"
       ansible.builtin.debug:
         msg: "Staged {{ s2i_ci_src[1] }} -> {{ s2i_ci_sync_to }}"
+
+    # Zuul stages branch tip. Reset to the sources.txt pin unless this
+    # project carries a change in the buildset. The pin is an ancestor of
+    # the tip, so the object is already in the Zuul checkout; if it is
+    # not, drop the tree and let build.sh clone the pin as it always has.
+    - name: "Check out the pinned commit for {{ s2i_ci_src[0] }}"
+      when:
+        - s2i_ci_prefer_shas | default(false) | bool
+        - s2i_ci_zuul_name_map[s2i_ci_src[1]] not in
+          s2i_ci_change_projects | default([])
+        - s2i_ci_src[4] | default('') | length > 0
+        - s2i_ci_src[4] != '-'
+      block:
+        - name: "Reset to pin {{ s2i_ci_src[0] ~ ' ' ~ s2i_ci_src[4] }}"
+          ansible.builtin.command:
+            argv:
+              - git
+              - checkout
+              - --quiet
+              - --detach
+              - "{{ s2i_ci_src[4] }}"
+            chdir: "{{ s2i_ci_sync_to }}"
+          changed_when: true
+      rescue:
+        - name: "Discard the tree so build.sh clones {{ s2i_ci_src[0] }}"
+          ansible.builtin.file:
+            path: "{{ s2i_ci_sync_to }}"
+            state: absent
+
+        - name: "Warn about the clone fallback for {{ s2i_ci_src[0] }}"
+          ansible.builtin.debug:
+            msg: >-
+              {{ s2i_ci_src[4] }} not present in the Zuul checkout of
+              {{ s2i_ci_src[1] }}; build.sh will clone it instead.
 
     - name: "Record staged project for {{ s2i_ci_src[0] }}"
       ansible.builtin.set_fact:

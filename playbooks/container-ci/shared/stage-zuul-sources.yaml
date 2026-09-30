@@ -39,6 +39,17 @@
     s2i_ci_zuul_project_names: "{{ s2i_ci_zuul_name_map | list }}"
     s2i_ci_staged_projects: []
 
+# Projects carrying a change in the buildset (the change under test, or
+# any Depends-On) keep their Zuul checkout instead of being reset.
+- name: Collect projects carrying a change in this buildset
+  ansible.builtin.set_fact:
+    s2i_ci_change_projects: >-
+      {{ (zuul['items'] | default([]))
+         | selectattr('project', 'defined')
+         | map(attribute='project.canonical_name', default='')
+         | select('ne', '')
+         | unique | list }}
+
 - name: Resolve Zuul requirements checkout for speculative constraints
   when: "'openstack/requirements' in s2i_ci_zuul_name_map"
   ansible.builtin.set_fact:

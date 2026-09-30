@@ -1494,7 +1494,7 @@ auto_detect() {
 }
 
 # List source dependencies for an image target.
-# Outputs pipe-delimited records: name|canonical_project|url|dest_dir
+# Outputs pipe-delimited records: name|canonical_project|url|dest_dir|pinned_hash
 # Used by Ansible playbooks to stage Zuul sources without re-parsing
 # sources.txt themselves (build.sh is the single source of truth).
 # Args: <image-target> [stream]
@@ -1530,7 +1530,7 @@ list_sources() {
 
   declare -A _seen_sources=()
   for sources_file in "${sources_files[@]}"; do
-    while IFS=' ' read -r entry_stream name url _branch _hash _version; do
+    while IFS=' ' read -r entry_stream name url _branch pinned_hash _version; do
       [[ -z "${entry_stream}" || "${entry_stream}" == \#* ]] && continue
       [[ "${name}" == "upper-constraints" ]] && continue
       [[ -n "${stream}" && "${entry_stream}" != "${stream}" ]] && continue
@@ -1548,7 +1548,7 @@ list_sources() {
         dest_dir="${CONTAINERS_DIR}/${project}/src/${name}"
       fi
 
-      echo "${name}|${url_path}|${url}|${dest_dir}"
+      echo "${name}|${url_path}|${url}|${dest_dir}|${pinned_hash}"
     done < "${sources_file}"
   done
 }
@@ -2691,7 +2691,7 @@ case "${ACTION}" in
     echo "  auto-detect        Given an upstream project path (e.g. openstack/nova), print"
     echo "                     the container images whose sources.txt references that project"
     echo "  list-sources       Print pipe-delimited source records for a target:"
-    echo "                     name|canonical_project|url|dest_dir"
+    echo "                     name|canonical_project|url|dest_dir|pinned_hash"
     echo "  sync-locks         Relock current src/ trees against current constraints"
     echo "                     without advancing sources.txt pins. Used by speculative CI"
     echo "                     after staging Zuul checkouts."

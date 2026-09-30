@@ -225,7 +225,7 @@ test_list_sources_image_level_returns_pipe_delimited() {
   while IFS= read -r line; do
     local field_count
     field_count="$(echo "${line}" | awk -F'|' '{print NF}')"
-    assert "4 pipe-delimited fields in: ${line}" test "${field_count}" -eq 4
+    assert "5 pipe-delimited fields in: ${line}" test "${field_count}" -eq 5
   done <<< "${output}"
 }
 
@@ -236,6 +236,15 @@ test_list_sources_image_level_includes_project_and_image_sources() {
 
   assert_grep "beta-svc" "${TEST_DIR}/build.log"
   assert_grep "beta-extra" "${TEST_DIR}/build.log"
+}
+
+test_list_sources_emits_pinned_hash() {
+  local output
+  output="$(_run list-sources beta/beta-sub master 2>/dev/null)"
+  echo "${output}" > "${TEST_DIR}/build.log"
+
+  assert_grep "^beta-svc|.*|111222$" "${TEST_DIR}/build.log"
+  assert_grep "^beta-extra|.*|333444$" "${TEST_DIR}/build.log"
 }
 
 test_list_sources_excludes_upper_constraints() {
@@ -290,6 +299,7 @@ TESTS=(
   test_no_arg_fails
   test_list_sources_image_level_returns_pipe_delimited
   test_list_sources_image_level_includes_project_and_image_sources
+  test_list_sources_emits_pinned_hash
   test_list_sources_excludes_upper_constraints
   test_list_sources_project_level_includes_image_level_sources
   test_list_sources_project_level_deduplicates
