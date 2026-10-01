@@ -13,6 +13,46 @@
               - ^LICENSE.*$
         - s2i-openstack-container-content-provider:
             irrelevant-files: *irrelevant-for-zuul
+            required-projects:
+              - github.com/openstack-k8s-operators/s2i-openstack-containers
+              - opendev.org/zuul/zuul-jobs
+              # From `build.sh list-sources` over all image targets.
+              # The five non-opendev sources and openstack/requirements
+              # are excluded on purpose and keep the clone path, as are
+              # the sources not yet listed as untrusted-projects in the
+              # RDO tenant config.
+              - opendev.org/openstack/aetos
+              - opendev.org/openstack/aodh
+              - opendev.org/openstack/barbican-tempest-plugin
+              - opendev.org/openstack/ceilometer
+              - opendev.org/openstack/cinder
+              - opendev.org/openstack/cloudkitty
+              - opendev.org/openstack/cloudkitty-dashboard
+              - opendev.org/openstack/cloudkitty-tempest-plugin
+              - opendev.org/openstack/cyborg
+              - opendev.org/openstack/cyborg-tempest-plugin
+              - opendev.org/openstack/glance
+              - opendev.org/openstack/heat
+              - opendev.org/openstack/horizon
+              - opendev.org/openstack/ironic
+              - opendev.org/openstack/keystone
+              - opendev.org/openstack/manila
+              - opendev.org/openstack/manila-ui
+              - opendev.org/openstack/neutron
+              - opendev.org/openstack/neutron-fwaas
+              - opendev.org/openstack/neutron-tempest-plugin
+              - opendev.org/openstack/nova
+              - opendev.org/openstack/octavia
+              - opendev.org/openstack/placement
+              - opendev.org/openstack/python-tempestconf
+              - opendev.org/openstack/swift
+              - opendev.org/openstack/telemetry-tempest-plugin
+              - opendev.org/openstack/tempest
+              - opendev.org/openstack/watcher
+              - opendev.org/openstack/watcher-dashboard
+              - opendev.org/openstack/watcher-tempest-plugin
+            vars:
+              s2i_ci_prefer_shas: true
         - s2i-openstack-container-consumer-smoke:
             irrelevant-files: *irrelevant-for-zuul
             dependencies:
